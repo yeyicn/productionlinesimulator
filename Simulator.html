@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <style>
+    :root {
+        --end-width: 300px;
+        /* 结束宽度变量 */
+    }
+
+    body {
+        font-family: monospace;
+    }
+
+    @keyframes widthAnimation {
+        from {
+            width: 0px;
+        }
+
+        to {
+            width: var(--end-width);
+        }
+    }
+
+    .station div.p1 {
+        background-color: #fc5f48;
+    }
+
+    .station div.p2 {
+        background-color: #00e53f;
+    }
+
+    .station div.p3 {
+        background-color: #4b8aff;
+    }
+    .station div.p4 {
+        background-color: #fc0;
+    }
+
+    .station {
+        min-height: 32px;
+        background-color: #f7f7f7;
+        margin-top: 10px;
+        margin-bottom: 10px;
+    }
+
+    .process {
+        width: 0px;
+        height: 16px;
+        overflow: hidden;
+        white-space: nowrap;
+        /*		background-color: #fc0;*/
+        margin-top: 10px;
+        margin-bottom: 10px;
+        border-radius: 8px;
+        color: #fff;
+        animation: widthAnimation var(--animation-duration) linear forwards;
+    }
+    </style>
+</head>
+
+<body>
+    <div id="stations">
+    </div>
+</body>
+
+</html>
+<script>
+
+const products = [1, 2, 3, 4];
+const stations = [
+    { name: 'a', ct: 2, wip: [] },
+    { name: 'b', ct: 4, wip: [] },
+    { name: 'c', ct: 3, wip: [] }
+];
+
+
+const zeroTime = performance.now();
+
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+function createProductDiv(pDiv, w, m, d, curr) {
+    const productDiv = document.createElement('div');
+    productDiv.style.setProperty("margin-left", m + "px");
+    productDiv.style.setProperty("--end-width", w + "px");
+    productDiv.style.setProperty("--animation-duration", d + "s");
+    productDiv.className = 'process p' + curr;
+    productDiv.innerHTML = 'Product: ' + curr;
+    pDiv.appendChild(productDiv);
+}
+
+function initStationDiv(pDiv, i) {
+    const stationDiv = document.createElement('div');
+    stationDiv.className = 'station';
+    stationDiv.id = 'station' + i;
+    stationDiv.innerHTML = 'Station ' + stations[i].name;
+    pDiv.appendChild(stationDiv);
+}
+
+async function createConsumer(index) {
+    const station = stations[index];
+
+    station.flag = false;
+
+    if (station.wip.length > 0) {
+        const startTime = performance.now();
+        station.flag = true;
+
+        const w = station.ct * 1000;
+        await sleep(w);
+        const endTime = performance.now();
+        const duration = endTime - startTime;
+
+        let curr = station.wip.shift();
+        createProductDiv(document.getElementById('station' + index), duration / 20, (startTime - zeroTime) / 20, w / 1000, curr);
+
+        console.log("[" + Math.round(endTime) + "] Station " + station.name + " consumed data: " + curr);
+
+        if (stations[index + 1]) {
+            stations[index + 1].wip.push(curr);
+            if (!stations[index + 1].flag) {
+                createConsumer(index + 1);
+            }
+        }
+        createConsumer(index);
+    }
+}
+
+const stationsDiv = document.getElementById('stations');
+
+stations.forEach((_, index) => {
+    createConsumer(index);
+    initStationDiv(stationsDiv, index);
+});
+
+stations[0].wip = products;
+createConsumer(0);
+
+</script>
